@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<metaModel file_level="client" file_no="250">
+    <type name="Guice_Annotation" rid="0">
+        <description>Guice Annotation</description>
+        <inheritedCategory name="UAObject"/>
+    </type>
+</metaModel>

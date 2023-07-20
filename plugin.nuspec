@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>com.castsoftware.uc.guice</id>
+    <version>1.0.0</version>
+    <title>Google Guice</title>
+    <authors>User Community</authors>
+    <owners>User Community</owners>
+    <licenseUrl>https://extend.castsoftware.com/api/package/license/product</licenseUrl>
+    <projectUrl>https://github.com/CAST-Extend/</projectUrl>
+    <iconUrl>https://miro.medium.com/v2/resize:fit:444/1*bZhuDw5BTdUu3xjyiwiuJQ.png</iconUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>This extension provides support for the Google Guice framework in Java applications.</description>
+    <releaseNotes>https://github.com/CAST-Extend/</releaseNotes>
+    <dependencies>
+      <dependency id="CAIP" version="8.3.0" />
+      <dependency id="com.castsoftware.internal.platform" version="0.0.8" />
+    </dependencies>
+  </metadata>
+</package>

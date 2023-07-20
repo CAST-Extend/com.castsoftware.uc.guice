@@ -1,0 +1,5 @@
+INJECTION;com.example.App.App;com.example.App.Message
+BINDING;com.example.App.MessageModule.provideMessage;com.example.App.Message
+BINDING;com.example.GuiceDemo.DemoModule.provideCount;com.example.GuiceDemo.Count
+BINDING;com.example.GuiceDemo.DemoModule.provideMessage;com.example.GuiceDemo.Message
+INJECTION;com.example.GuiceDemo.Greeter.Greeter;com.example.GuiceDemo.Greeter.Message;com.example.GuiceDemo.Greeter.Count
