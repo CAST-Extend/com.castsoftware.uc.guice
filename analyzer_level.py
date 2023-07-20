@@ -30,7 +30,7 @@ class GuiceAnalyzerLevel(cast.analysers.jee.Extension):
         log.info('Created file com.castsoftware.uc.guice.txt to store intermediary findings')
 
         # Adding a classpath for Guice
-        options.add_classpath('lib')
+        options.add_classpath('lib-guice')
         log.info('Added Guice JARs to the classpath')
 
     def end_analysis(self):
