@@ -15,7 +15,6 @@ class GuiceAnalyzerLevel(cast.analysers.jee.Extension):
 
     def __init__(self):
 
-        super(self).__init__()
         # Declaring a temporary file to exchange data between the analyzer level and the application level
         self.exchange_file = None
 
@@ -26,8 +25,8 @@ class GuiceAnalyzerLevel(cast.analysers.jee.Extension):
         log.info('Starting JEE Analysis for Google Guice Framework...')
 
         # Creating the temporary file to exchange data between the analyzer level and the application level
-        self.exchange_file = self.get_intermediate_file('com.castsoftware.uc.guice.txt')
-        log.info('Created file com.castsoftware.uc.guice.txt to store intermediary findings')
+        self.exchange_file = self.get_intermediate_file('com.castsoftware.uc.guice-temp-data.txt')
+        log.info('Created file com.castsoftware.uc.guice-temp-data.txt to store intermediary findings')
 
         # Adding a classpath for Guice
         options.add_classpath('lib-guice')
