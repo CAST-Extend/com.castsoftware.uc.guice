@@ -7,11 +7,11 @@
     <authors>User Community</authors>
     <owners>User Community</owners>
     <licenseUrl>https://extend.castsoftware.com/api/package/license/uc</licenseUrl>
-    <projectUrl>https://github.com/CAST-Extend/com.castsoftware.uc.guice/wiki</projectUrl>
-    <iconUrl>https://raw.githubusercontent.com/CAST-Extend/com.castsoftware.uc.guice/main/icon-guice.png</iconUrl>
+    <projectUrl>https://github.com/CAST-Extend/com.castsoftware.uc.guice/tree/main/doc/README.md</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/CAST-Extend/com.castsoftware.uc.guice/main/doc/icon-guice.png</iconUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <description>This extension provides support for the Google Guice framework in Java applications.</description>
-    <releaseNotes>https://github.com/CAST-Extend/com.castsoftware.uc.guice/wiki</releaseNotes>
+    <releaseNotes>https://github.com/CAST-Extend/com.castsoftware.uc.guice/tree/main/doc/RELEASE-NOTES.md</releaseNotes>
     <dependencies>
       <dependency id="CAIP" version="8.3.0" />
       <dependency id="com.castsoftware.internal.platform" version="0.0.8" />
