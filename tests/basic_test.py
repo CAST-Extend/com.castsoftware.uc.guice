@@ -24,10 +24,16 @@ class GuiceTest(unittest.TestCase):
         # self.assertTrue(obj_interface)
 
     def test_application_init(self):
-        analysis = TestKnowledgeBase()
+        engine = create_postgres_engine(port=2284)
+        cast.application.test.run(kb_name='guice_demo_local', application_name='guice-demo', event='end_application', engine=engine)
+
+    def test_application_level(self):
+        engine = create_postgres_engine(port=2284)
+        kb = KnowledgeBase('guice_demo_local', engine)
+        app = kb.get_application(name='guice-demo')
 
         extension = GuiceApplicationLevel()
-        application = analysis.run(extension.end_application)
+        application = kb.run(extension.end_application)
 
     def test_guice_localhost(self):
         engine = create_postgres_engine(port=2284)

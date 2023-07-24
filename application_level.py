@@ -4,6 +4,7 @@ Created on 2022-11-22
 @author: KFU
 """
 import cast_upgrade_1_6_13  # @UnusedImport
+from cast import application
 from cast.application import ApplicationLevelExtension, create_link, Object
 import logging
 
@@ -13,96 +14,120 @@ class GuiceApplicationLevel(ApplicationLevelExtension):
     def end_application(self, application):
         self._log('Starting Application level Analysis for Google Guice Framework...')
 
-        # Fetching temporary file with data generated at the analyzer level
-        # Formats expected:
-        # BINDING;object_full_name;annotation;annotation;...
-        # INJECTION;object_full_name;annotation;annotation;...
-        # e.g.
-        # BINDING;com.example.App.MessageModule.provideMessage;com.example.App.Message;com.example.App.Printer
-        # INJECTION;com.example.App.App;Message;Count
-        exchange_file = self.get_intermediate_file('com.castsoftware.uc.guice-temp-data.txt')
-        injections, bindings = self._load_content_from_file(exchange_file)
+        # Finding methods annotated with @Inject
+        # i.e. javax.inject.Inject
+        objects_using_guice = self._find_methods_using_an_annotation(application, ['javax.inject.Inject'])
+        self._log('Working on ' + str(len(objects_using_guice)) + ' objects annotated with @Inject')
 
-        for method, src_annotations in injections.items():
-            self._log('Working on ' + method + ' annotated with ' + ', '.join(src_annotations))
+        # Listing all other annotations tied to the methods found
+        objects_using_guice_with_their_annotations = self._find_annotations_for_these_methods(application,
+                                                                                              objects_using_guice,
+                                                                                              ['javax.inject.Inject'])
 
-            for src_annotation in src_annotations:
-                for target_object_name, dest_annotations in bindings.items():
-                    for dest_annotation in dest_annotations:
+        # Finding @Provides methods that share the same annotations and creating the link
+        # i.e. com.google.inject.Provides
+        self._create_links(application, objects_using_guice_with_their_annotations)
 
-                        match = False
+    def _find_methods_using_an_annotation(self, application, annotations):
+        """
+        @type application: cast.application.Application
+        """
 
-                        # Strict match, e.g. xxx.yyy.zzz == xxx.yyy.zzz
-                        if dest_annotation == src_annotation:
-                            match = True
-                            self._log('Found one strict match on ' + src_annotation
-                                      + '. Creating link from '
-                                      + method + ' to ' + target_object_name)
+        all_annotations = application.objects().has_type('CAST_Java_AnnotationType')
+        annotation_objects_to_search = []
+        for d in all_annotations:
+            if d.get_fullname() in annotations:
+                annotation_objects_to_search.append(d)
 
-                        # Loose match, e.g. zzz == zzz
-                        # dest_annotation can be modified without impact. But not src_annotation
-                        dest_annotation = dest_annotation.split('.')[-1]
-                        if not match and dest_annotation == src_annotation.split('.')[-1]:
-                            match = True
-                            self._log('Found one loose match on ' + dest_annotation
-                                      + '. Creating link from '
-                                      + method + ' to ' + target_object_name)
+        all_methods = application.objects().has_type('Java').is_executable().has_type(
+            ['JV_CTOR', 'JV_GENERIC_METHOD', 'JV_METHOD'])
 
-                        # Link creation
-                        if match:
-                            src = None
-                            dest = None
-                            for o in application.objects().has_type('Java').is_executable().has_type(
-                                    ['JV_CTOR', 'JV_GENERIC_METHOD', 'JV_METHOD']):
-                                if o.get_fullname() == method:
-                                    src = o
-                                if o.get_fullname() == target_object_name:
-                                    dest = o
+        # Query selecting all links that start from methods and end in @Inject annotations
+        links = application.links().has_caller(all_methods).has_callee(annotation_objects_to_search)
+        objects_matching = []
+        for l in links:
+            self._log('Object found using @' + ', @'.join(annotations) + ': ' + l.get_caller().get_fullname())
+            objects_matching.append(l.get_caller())
 
-                            if src is not None and dest is not None:
-                                l = create_link('useLink', src, dest)
-                                self._log('Link created')
-                                # TODO bookmark management? use the exact annotation bookmark for the link
-                                # l.add_bookmark(src.get_positions())
+        return objects_matching
 
-        self._log('Done parsing the temporary data file created during the JEE analysis')
+    # Returns a dict of object->[annotations]
+    def _find_annotations_for_these_methods(self, application, methods_to_search_in, annotations_to_exclude=None):
+        """
+        @type application: cast.application.Application
+        """
 
-        # parcourt les injections
-        # for each, chercher les mappings qui peuvent correspondre
-        # si match, créer lien
+        # Query selecting all links that start from select methods and end in annotations
+        all_annotations = application.objects().has_type('CAST_Java_AnnotationType')
+        links = application.links().has_caller(methods_to_search_in).has_callee(all_annotations)
+        total = str(links.count())
 
-        # correspondance stricte sur fullname, si pas de match, relaxer en supprimant des niveaux intermédiaires
+        objects_and_annotations = {}
+        i = 1
+        for link in links:
+            self._log(
+                'Processing link '
+                + str(i) + '/' + total
+                + ': Looking for annotations from ' + link.get_caller().get_fullname(), 'debug')
+            i = i + 1
 
-    def _load_content_from_file(self, exchange_file):
-        injections = {}
-        bindings = {}
-        count = 0
-        for line in exchange_file:
-            count += 1
-            if line.find('INJECTION') == 0:
-                injection = line.rstrip().split(';')
-                injection.pop(0)
-                method = injection.pop(0)
-                injections[method] = injection
-            if line.find('BINDING') == 0:
-                target = line.rstrip().split(';')
-                target.pop(0)
-                method = target.pop(0)
-                bindings[method] = target
+            if link.get_caller() in methods_to_search_in:
+                if annotations_to_exclude is not None and link.get_callee().get_fullname() in annotations_to_exclude:
+                    continue
+                self._log(
+                    'Object ' + link.get_caller().get_fullname() + ' also has annotation ' + link.get_callee().get_fullname())
+                if link.get_caller() in objects_and_annotations:
+                    objects_and_annotations[link.get_caller()].append(link.get_callee())
+                else:
+                    objects_and_annotations[link.get_caller()] = []
+                    objects_and_annotations[link.get_caller()].append(link.get_callee())
 
-        lines_not_imported = count - len(injections) - len(bindings)
-        if lines_not_imported > 0:
-            self._log(str(lines_not_imported)
-                      + ' lines from the exchange file were not imported. They might be formatted incorrectly. Check the file at '
-                      + exchange_file.filename(), 'warning')
+        return objects_and_annotations
 
-        return injections, bindings
+    def _create_links(self, application, objects_using_guice_with_their_annotations):
+        """
+        @type application: cast.application.Application
+        """
+
+        count_link_created = 0
+
+        # Find all potential callees for our link, i.e methods annotated with @Provides
+        potential_callees = self._find_methods_using_an_annotation(application, ['com.google.inject.Provides'])
+
+        for caller, annotations in objects_using_guice_with_their_annotations.items():
+            # Find the callees
+            for annotation in annotations:
+                self._log('Searching for a Provider for annotation '
+                          + annotation.get_fullname()
+                          + ' used in '
+                          + caller.get_fullname())
+
+                # Find all methods that link to the same annotation
+                links = application.links().has_caller(potential_callees).has_callee([annotation])
+
+                for l in links:
+                    if l.get_caller().get_fullname() is not caller.get_fullname():
+                        # Create a new link from our caller to this identified callee
+                        new_link = create_link('useLink', caller, l.get_caller())
+                        count_link_created = count_link_created + 1
+                        self._log('Provider found, link created between '
+                                  + caller.get_fullname()
+                                  + ' and '
+                                  + l.get_caller().get_fullname())
+                        # TODO bookmark management? use the exact annotation bookmark for the link
+                        # new_link.add_bookmark(src.get_positions())
+
+        self._log(str(count_link_created) + ' links created in total')
 
     def _log(self, msg, level='info'):
         msg = '[com.castsoftware.uc.guice] ' + msg
         if level == 'info':
             logging.info(msg)
+        elif level == 'debug':
+            logging.debug(msg)
         elif level == 'warning':
             logging.warning(msg)
         elif level == 'error':
             logging.error(msg)
+        else:
+            logging.info(msg)
